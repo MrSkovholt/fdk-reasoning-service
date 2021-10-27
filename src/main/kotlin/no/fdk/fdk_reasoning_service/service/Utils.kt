@@ -49,3 +49,12 @@ val napThemes: Set<String> = setOf(
     "https://psi.norge.no/los/ord/vegvedlikehold",
     "https://psi.norge.no/los/ord/gravemelding",
     "https://psi.norge.no/los/ord/sykkel")
+
+val openDataURIBases: Set<String> = setOf(
+    "creativecommons.org/licenses/by/4.0/deed.no",
+    "data.norge.no/nlod/no/1.0",
+    "creativecommons.org/publicdomain/zero/1.0",
+    "data.norge.no/nlod/no/2.0",
+    "creativecommons.org/licenses/by/4.0",
+    "data.norge.no/nlod/no",
+    "data.norge.no/nlod")
