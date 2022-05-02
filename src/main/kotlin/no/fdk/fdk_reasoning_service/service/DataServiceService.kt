@@ -2,8 +2,6 @@ package no.fdk.fdk_reasoning_service.service
 
 import no.fdk.fdk_reasoning_service.model.CatalogType
 import no.fdk.fdk_reasoning_service.model.TurtleDBO
-import no.fdk.fdk_reasoning_service.rdf.CPSV
-import no.fdk.fdk_reasoning_service.rdf.CV
 import org.apache.jena.rdf.model.Model
 import org.apache.jena.rdf.model.ModelFactory
 import org.apache.jena.rdf.model.Resource
@@ -73,6 +71,8 @@ class DataServiceService(
         else {
             val catalogServices: List<DataService> = listProperties(DCAT.service)
                 .toList()
+                .filter { it.isResourceProperty() }
+                .filter { it.resource.hasProperty(RDF.type, DCAT.DataService) }
                 .mapNotNull { concept -> concept.resource.extractDataService() }
 
             var catalogModelWithoutServices = listProperties().toModel()

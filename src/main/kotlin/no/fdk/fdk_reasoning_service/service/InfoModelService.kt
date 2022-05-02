@@ -82,6 +82,8 @@ class InfoModelService(
         else {
             val catalogInfoModels: List<InformationModel> = listProperties(ModellDCATAPNO.model)
                 .toList()
+                .filter { it.isResourceProperty() }
+                .filter { it.resource.hasProperty(RDF.type, ModellDCATAPNO.InformationModel) }
                 .filter { model.catalogContainsInfoModel(uri, it.resource.uri) }
                 .mapNotNull { infoModel -> infoModel.resource.extractInformationModel() }
 
