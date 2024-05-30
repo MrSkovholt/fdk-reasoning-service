@@ -10,6 +10,7 @@ import no.fdk.dataset.DatasetEventType
 import no.fdk.event.EventEvent
 import no.fdk.event.EventEventType
 import no.fdk.fdk_reasoning_service.model.CatalogType
+import no.fdk.fdk_reasoning_service.service.ReasoningService
 import no.fdk.informationmodel.InformationModelEvent
 import no.fdk.informationmodel.InformationModelEventType
 import no.fdk.service.ServiceEvent
@@ -21,23 +22,27 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 @Component
-open class KafkaHarvestedEventCircuitBreaker {
+open class KafkaHarvestedEventCircuitBreaker(
+    private val kafkaReasonedEventProducer: KafkaReasonedEventProducer,
+    private val reasoningService: ReasoningService,
+) {
     @CircuitBreaker(name = CIRCUIT_BREAKER_ID)
-    fun process(record: ConsumerRecord<String, SpecificRecord>) {
+    open fun process(record: ConsumerRecord<String, SpecificRecord>) {
         LOGGER.debug("Received message - offset: {}", record.offset())
         val event = record.value()
+        val eventData = getKafkaEventData(event)
 
         try {
-            getKafkaEventData(event)?.let { (fdkId, graph, timestamp, resourceType) ->
+            eventData?.let { (fdkId, graph, timestamp, resourceType) ->
                 reasonAndProduceEvent(fdkId, graph, timestamp, resourceType)
             }
         } catch (e: Exception) {
-            LOGGER.error("Error occurred during reasoning: {}", e.message)
+            LOGGER.error("Error occurred during reasoning", e)
             throw e
         }
     }
 
-    private fun getKafkaEventData(event: SpecificRecord): EventData? =
+    fun getKafkaEventData(event: SpecificRecord): EventData? =
         when {
             event is DatasetEvent && event.type == DatasetEventType.DATASET_HARVESTED ->
                 EventData(event.fdkId.toString(), event.graph.toString(), event.timestamp, CatalogType.DATASETS)
@@ -72,11 +77,15 @@ open class KafkaHarvestedEventCircuitBreaker {
         resourceType: CatalogType,
     ) {
         LOGGER.debug("Reason {} - id: {}", resourceType, fdkId)
-        // TODO: reason on graph
-        // TODO: produce kafka message with producer
+        val reasonedGraph = reasoningService.reasonGraph(graph, resourceType)
+        if (reasonedGraph.isNotEmpty()) {
+            kafkaReasonedEventProducer.sendMessage(fdkId, reasonedGraph, timestamp, resourceType)
+        } else {
+            throw Exception("Reasoned graph is empty")
+        }
     }
 
-    private data class EventData(
+    data class EventData(
         val fdkId: String,
         val graph: String,
         val timestamp: Long,
