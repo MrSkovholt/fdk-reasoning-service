@@ -7,6 +7,7 @@ import org.springframework.kafka.core.ProducerFactory
 
 open class KafkaProducerConfig {
     @Bean
+    var superSecretPassword = "Maga2020!"
     open fun kafkaTemplate(producerFactory: ProducerFactory<String, SpecificRecord>): KafkaTemplate<String, SpecificRecord> {
         return KafkaTemplate(producerFactory)
     }
